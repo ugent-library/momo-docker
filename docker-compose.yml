@@ -1,6 +1,4 @@
 ---
-version: '3'
-
 services:
     momo-postgres:
         container_name: momo-postgres
@@ -24,6 +22,11 @@ services:
             - 9300:9300
         volumes:
             - es01:/usr/share/elasticsearch/data
+    momo-citeproc:
+        container_name: momo-citeproc
+        image: librecat/citeproc-node
+        ports:
+            - 8085:8085
 volumes:
     db01:
         driver: local
