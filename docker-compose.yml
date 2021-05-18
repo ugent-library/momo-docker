@@ -1,5 +1,18 @@
 ---
 services:
+    momo:
+      container_name: momo
+      image: "ugentlib/momo"
+      ports:
+        - 3000:3000
+      environment:
+        MOMO_PG_CONN: "host=momo-postgres port=5432 user=momo password=password dbname=momo_dev sslmode=disable"
+        MOMO_ES6_URL: "http://momo-elastic:9200"
+        MOMO_HOST: "localhost"
+        MOMO_SSL: "false"
+        MOMO_OIDC_URL: ""
+        MOMO_OIDC_CLIENT_ID: ""
+        MOMO_OIDC_CLIENT_SECRET: ""
     momo-postgres:
         container_name: momo-postgres
         image: postgres
@@ -11,7 +24,6 @@ services:
         volumes:
             - ./init-user-db.sh:/docker-entrypoint-initdb.d/init-user-db.sh
             - db01:/var/lib/postgresql/data
-
     momo-elastic:
         container_name: momo-elastic
         image: elasticsearch:6.8.14
