@@ -1,46 +1,73 @@
 ---
 services:
-    momo:
-      container_name: momo
-      image: "ugentlib/momo"
-      ports:
-        - 3000:3000
-      environment:
-        MOMO_PG_CONN: "host=momo-postgres port=5432 user=momo password=password dbname=momo_dev sslmode=disable"
-        MOMO_ES6_URL: "http://momo-elastic:9200"
-        MOMO_HOST: "localhost"
-        MOMO_SSL: "false"
-        MOMO_OIDC_URL: ""
-        MOMO_OIDC_CLIENT_ID: ""
-        MOMO_OIDC_CLIENT_SECRET: ""
-    momo-postgres:
-        container_name: momo-postgres
-        image: postgres
-        environment:
-            - POSTGRES_PASSWORD=password
-            - PGDATA=/var/lib/postgresql/data/pgdata
-        ports:
-            - 5432:5432
-        volumes:
-            - ./init-user-db.sh:/docker-entrypoint-initdb.d/init-user-db.sh
-            - db01:/var/lib/postgresql/data
-    momo-elastic:
-        container_name: momo-elastic
-        image: elasticsearch:6.8.14
-        environment:
-            - "discovery.type=single-node"
-        ports:
-            - 9200:9200
-            - 9300:9300
-        volumes:
-            - es01:/usr/share/elasticsearch/data
-    momo-citeproc:
-        container_name: momo-citeproc
-        image: librecat/citeproc-node
-        ports:
-            - 8085:8085
+  momo:
+    container_name: momo
+    image: "ugentlib/momo"
+    ports:
+      - 3000
+    environment:
+      # change domain
+      MOMO_BASE_URL: "https://domain.com"
+      MOMO_PORT: "3000"
+      MOMO_PG_CONN: "host=momo-postgres port=5432 user=momo password=password dbname=momo_dev sslmode=disable"
+      MOMO_ES6_URL: "http://momo-elastic:9200"
+      MOMO_CITEPROC_URL: "http://momo-citeproc:8085"
+      MOMO_OIDC_URL: ""
+      MOMO_OIDC_CLIENT_ID: ""
+      MOMO_OIDC_CLIENT_SECRET: ""
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.momo-http.entrypoints=web"
+        # change domain
+      - "traefik.http.routers.momo-http.rule=Host(`domain.com`) && PathPrefix(`/`)"
+      - "traefik.http.routers.momo-http.middlewares=momo-https"
+      - "traefik.http.middlewares.momo-https.redirectscheme.scheme=https"
+      - "traefik.http.routers.momo.entrypoints=websecure"
+        # change domain
+      - "traefik.http.routers.momo.rule=Host(`domain.com`) && PathPrefix(`/`)"
+      - "traefik.http.routers.momo.tls=true"
+      - "traefik.http.routers.momo.tls.certresolver=myresolver"
+      - "traefik.http.services.momo.loadbalancer.server.port=3000"
+    networks:
+      - my_proxy_network
+
+  momo-postgres:
+    container_name: momo-postgres
+    image: postgres
+    environment:
+      - POSTGRES_PASSWORD=password
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    ports:
+      - 5432
+    volumes:
+      - ./init-user-db.sh:/docker-entrypoint-initdb.d/init-user-db.sh
+      - db01:/var/lib/postgresql/data
+
+  momo-elastic:
+    container_name: momo-elastic
+    image: elasticsearch:6.8.14
+    environment:
+      - "discovery.type=single-node"
+    ports:
+      - 9200
+      - 9300
+    volumes:
+      - es01:/usr/share/elasticsearch/data
+
+  momo-citeproc:
+    container_name: momo-citeproc
+    image: librecat/citeproc-node
+    ports:
+      - 8085:8085
+
 volumes:
-    db01:
-        driver: local
-    es01:
-        driver: local
+  db01:
+    driver: local
+  es01:
+    driver: local
+
+networks:
+  my_proxy_network:
+    external:
+      name: proxy_network
+
